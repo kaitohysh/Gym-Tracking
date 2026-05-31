@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<title>Lift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0b;--surface:#141416;--surface-2:#1d1d20;--line:#2a2a2e;
+    --text:#f4f4f5;--muted:#8a8a92;--accent:#d6f93b;--accent-dim:#9fb52c;
+    --danger:#ff5a52;--radius:16px;
+    --safe-bottom:env(safe-area-inset-bottom,0px);--safe-top:env(safe-area-inset-top,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    overscroll-behavior-y:none;}
+  body{padding-top:var(--safe-top);}
+  h1,h2,h3{font-family:'Archivo Black','Archivo',sans-serif;letter-spacing:-0.02em;margin:0;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input{font-family:inherit;}
+  #app{max-width:760px;margin:0 auto;padding:0 14px 60px;min-height:100vh;}
+
+  header.top{display:flex;align-items:center;gap:12px;padding:20px 0 14px;}
+  header.top .logo{font-family:'Archivo Black';font-size:24px;letter-spacing:-0.04em;}
+  header.top .logo span{color:var(--accent);}
+  .back{font-size:24px;font-weight:800;color:var(--text);padding:2px 6px;line-height:1;}
+  .grow{flex:1;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .muted{color:var(--muted);}
+  .empty{text-align:center;color:var(--muted);padding:44px 16px;font-weight:600;line-height:1.6;}
+  .empty .big{font-size:40px;margin-bottom:8px;}
+  .section-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 2px 12px;}
+  .divider{height:1px;background:var(--line);margin:20px 2px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);
+    color:#0a0a0b;font-weight:700;padding:14px 18px;border-radius:14px;font-size:15px;width:100%;transition:transform .1s;}
+  .btn:active{transform:scale(.97);}
+  .btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn.sm{width:auto;padding:9px 14px;font-size:13px;border-radius:11px;}
+  .btn.danger{background:transparent;color:var(--danger);border:1px solid var(--line);}
+  .row{display:flex;align-items:center;gap:10px;}
+  .between{justify-content:space-between;}
+
+  .list-item{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;transition:.15s;}
+  .list-item:active{background:var(--surface-2);}
+  .list-item .title{font-weight:700;font-size:17px;}
+  .list-item .sub{font-size:13px;color:var(--muted);margin-top:3px;font-weight:600;}
+  .chev{color:var(--muted);font-size:20px;}
+
+  /* ---- the table ---- */
+  .rtitle{font-family:'Archivo Black';font-size:24px;letter-spacing:-.03em;margin-bottom:2px;}
+  .rmeta{color:var(--muted);font-size:13px;font-weight:600;margin-bottom:14px;}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+    border-radius:14px;background:var(--surface);}
+  table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;}
+  th,td{padding:0;vertical-align:middle;}
+  .sticky-col{position:sticky;left:0;z-index:2;background:var(--surface);
+    width:150px;min-width:150px;max-width:150px;border-right:2px solid var(--line);}
+  thead .sticky-col{z-index:4;background:var(--surface-2);}
+  thead th{position:sticky;top:0;z-index:1;background:var(--surface-2);
+    border-bottom:1px solid var(--line);padding:9px 6px;text-align:center;
+    font-size:12px;font-weight:700;color:var(--muted);min-width:96px;}
+  thead th.today{color:var(--accent);}
+  thead .corner{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.05em;text-align:left;padding:9px 12px;}
+  .dayhead{position:relative;}
+  .dayhead .wd{display:block;font-size:10px;opacity:.7;}
+  .dayhead .dd{display:block;font-size:13px;color:var(--text);font-weight:700;}
+  .dayhead.today .dd{color:var(--accent);}
+  .dayhead .del{position:absolute;top:2px;right:3px;font-size:11px;color:var(--muted);
+    padding:2px 4px;line-height:1;display:none;}
+  .editing .dayhead .del{display:block;}
+  .editing .dayhead{cursor:pointer;}
+  .dayhead .edhint{display:none;font-size:9px;color:var(--accent-dim);font-weight:700;margin-top:2px;}
+  .editing .dayhead .edhint{display:block;}
+
+  .grouprow td{background:transparent;}
+  .grouphead{position:sticky;left:0;z-index:2;background:linear-gradient(var(--surface),var(--surface));
+    border-right:2px solid var(--line);border-top:1px solid var(--line);
+    padding:9px 12px;font-family:'Archivo Black';font-size:12px;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--accent);}
+  .groupfill{border-top:1px solid var(--line);background:rgba(214,249,59,.03);}
+
+  .exrow td{border-top:1px solid var(--line);}
+  .excell{padding:10px 12px;}
+  .excell .exname{font-weight:700;font-size:15px;line-height:1.2;}
+  .excell .exmeta{font-size:11px;color:var(--muted);font-weight:600;margin-top:3px;}
+  .daycell{padding:6px 6px;border-left:1px solid var(--line);}
+  .daycell .stack{display:flex;flex-direction:column;gap:5px;}
+  .daycell input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    font-size:15px;font-weight:700;padding:8px 6px;border-radius:9px;text-align:center;}
+  .daycell input:focus{outline:none;border-color:var(--accent-dim);}
+  .daycell input.w::placeholder,.daycell input.r::placeholder{color:#55555c;font-weight:600;font-size:12px;}
+  .daycell.today input{border-color:rgba(214,249,59,.4);}
+  .score{font-size:11px;font-weight:800;color:var(--accent-dim);text-align:center;margin-top:4px;min-height:13px;letter-spacing:.01em;}
+  .score.pr{color:var(--accent);}
+  .seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px;}
+  .seg button{flex:1;padding:9px 0;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted);}
+  .seg button.on{background:var(--accent);color:#0a0a0b;}
+
+  .pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;-webkit-overflow-scrolling:touch;}
+  .pill{flex:0 0 auto;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
+    font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px;white-space:nowrap;}
+  .pill.on{background:var(--accent);color:#0a0a0b;border-color:var(--accent);}
+  .stats{display:flex;gap:10px;margin-bottom:14px;}
+  .stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;}
+  .stat .sl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+  .stat .sv{font-family:'Archivo Black';font-size:23px;letter-spacing:-.02em;}
+  .stat .sv span{font-size:12px;font-family:'Archivo';color:var(--muted);margin-left:2px;}
+  .stat .sv.up{color:var(--accent);}
+  .stat .sv.down{color:var(--danger);}
+  .chart{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 12px 8px;margin-bottom:12px;}
+
+  .editbtn{font-size:13px;font-weight:700;color:var(--muted);padding:8px 12px;
+    border:1px solid var(--line);border-radius:11px;}
+  .editbtn.on{color:#0a0a0b;background:var(--accent);border-color:var(--accent);}
+
+  /* plan editor */
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .field input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-size:16px;font-weight:600;padding:13px 14px;border-radius:12px;}
+  .field input:focus{outline:none;border-color:var(--accent-dim);}
+  .planrow{display:grid;grid-template-columns:1fr 1.3fr 46px 64px 26px;gap:6px;align-items:center;margin-bottom:7px;}
+  .planrow input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    font-size:14px;font-weight:600;padding:10px 7px;border-radius:9px;}
+  .planrow input.c{text-align:center;}
+  .planrow .x{color:var(--danger);font-size:20px;font-weight:700;text-align:center;}
+  .planhead{display:grid;grid-template-columns:1fr 1.3fr 46px 64px 26px;gap:6px;
+    font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;padding:0 4px;}
+  .addrow{font-size:13px;font-weight:700;color:var(--accent);padding:8px 2px 2px;}
+
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:none;align-items:flex-end;animation:fade .2s;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{background:var(--surface);width:100%;max-width:760px;margin:0 auto;border-radius:22px 22px 0 0;
+    padding:22px 18px calc(22px + var(--safe-bottom));max-height:90vh;overflow-y:auto;border-top:1px solid var(--line);
+    animation:slideup .28s cubic-bezier(.2,.8,.2,1);}
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+  .sheet h2{font-size:22px;margin-bottom:18px;}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:40px;background:var(--text);color:var(--bg);
+    font-weight:700;font-size:14px;padding:11px 18px;border-radius:999px;z-index:200;opacity:0;transition:.25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top" id="topbar"></header>
+  <div id="view"></div>
+</div>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+<datalist id="muscles">
+  <option>Chest</option><option>Upper Chest</option><option>Shoulders</option>
+  <option>Side Delts</option><option>Rear Delts</option><option>Triceps</option>
+  <option>Biceps</option><option>Forearms</option><option>Back</option>
+  <option>Lats</option><option>Traps</option><option>Lower Back</option>
+  <option>Quads</option><option>Hamstrings</option><option>Glutes</option>
+  <option>Calves</option><option>Adductors</option><option>Abs</option>
+  <option>Obliques</option><option>Core</option>
+</datalist>
+
+<script>
+const KEY='lift_data_v2';
+let data={routines:[]};
+let screen={name:'home',rid:null,editing:false};
+
+function load(){try{const r=localStorage.getItem(KEY);if(r)data=JSON.parse(r);}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){toast('Could not save — storage blocked');}}
+const uid=()=>Math.random().toString(36).slice(2,9);
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1900);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmtDay(ts){const d=new Date(ts);return{wd:d.toLocaleDateString(undefined,{weekday:'short'}),
+  dd:d.toLocaleDateString(undefined,{day:'numeric',month:'short'})};}
+function isToday(ts){const a=new Date(ts),b=new Date();return a.toDateString()===b.toDateString();}
+
+/* estimated 1-rep-max — Epley: w*(1+reps/30); reps<=1 returns the weight */
+function e1rm(w,reps){if(!(w>0)||!(reps>0))return 0;return reps<=1?w:w*(1+reps/30);}
+/* parse a cell (weight/reps may be single or multi like "60,60,57.5" / "8,8,7"); score = best set */
+function cellScore(cell){
+  if(!cell)return null;
+  const ws=String(cell.w).split(/[^0-9.]+/).map(parseFloat).filter(x=>x>0);
+  const rs=String(cell.r).split(/[^0-9.]+/).map(parseFloat).filter(x=>x>0);
+  if(!ws.length||!rs.length)return null;
+  let best=0;
+  for(let i=0;i<rs.length;i++){const w=ws[Math.min(i,ws.length-1)];const v=e1rm(w,rs[i]);if(v>best)best=v;}
+  return best>0?best:null;
+}
+function scoreLabel(cell){const s=cellScore(cell);return s?('1RM '+Math.round(s)):'';}
+function cellVolume(cell){
+  if(!cell)return null;
+  const ws=String(cell.w).split(/[^0-9.]+/).map(parseFloat).filter(x=>x>0);
+  const rs=String(cell.r).split(/[^0-9.]+/).map(parseFloat).filter(x=>x>0);
+  if(!ws.length||!rs.length)return null;
+  let v=0;for(let i=0;i<rs.length;i++){v+=ws[Math.min(i,ws.length-1)]*rs[i];}
+  return v>0?v:null;
+}
+function unit(){return data.unit||'kg';}
+function setUnit(u){data.unit=u;save();render();}
+function fmtNum(n){return Math.round(n).toLocaleString();}
+/* which days set a new 1RM high vs earlier days -> PR star */
+function prMap(r,rowId){
+  const m={};let best=null;
+  r.days.forEach(d=>{const s=cellScore(r.log[rowId]&&r.log[rowId][d.id]);
+    if(s!=null){if(best!=null&&s>best+1e-9)m[d.id]=true;best=best==null?s:Math.max(best,s);}});
+  return m;
+}
+function refreshRowScores(rid,rowId){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return;
+  const prs=prMap(r,rowId);
+  r.days.forEach(d=>{const el=document.getElementById('sc_'+rowId+'_'+d.id);if(!el)return;
+    const cell=r.log[rowId]&&r.log[rowId][d.id];const lbl=scoreLabel(cell);
+    el.textContent=(prs[d.id]&&lbl?'⭐ ':'')+lbl;
+    el.classList.toggle('pr',!!(prs[d.id]&&lbl));});
+}
+
+function go(name,rid){screen={name,rid:rid||null,editing:false};render();}
+
+/* ---------------- render ---------------- */
+function render(){
+  const tb=document.getElementById('topbar');
+  if(screen.name==='home'){
+    tb.innerHTML=`<div class="logo">LIFT<span>.</span></div><div class="grow"></div>`;
+    document.getElementById('view').innerHTML=renderHome();
+    return;
+  }
+  const back=screen.name==='progress'?`go('routine','${screen.rid}')`:`go('home')`;
+  tb.innerHTML=`<button class="back" onclick="${back}">‹</button><div class="logo">LIFT<span>.</span></div>`;
+  if(screen.name==='progress'){
+    document.getElementById('view').innerHTML=renderProgress(screen.rid);
+  }else{
+    document.getElementById('view').innerHTML=renderRoutine(screen.rid);
+    // jump to the latest (right-most) column so today is in view
+    const w=document.querySelector('.table-wrap');if(w)w.scrollLeft=w.scrollWidth;
+  }
+}
+
+function renderHome(){
+  let h='';
+  if(!data.routines.length){
+    h+=`<div class="empty"><div class="big">🏋️</div>No routines yet.<br>Create your first one below.</div>`;
+  }else{
+    h+=`<div class="section-label">Your routines</div>`;
+    data.routines.forEach(r=>{
+      const days=r.days.length;
+      h+=`<div class="list-item" onclick="go('routine','${r.id}')">
+        <div><div class="title">${esc(r.name)}</div>
+        <div class="sub">${r.rows.length} exercises · ${days} day${days!==1?'s':''} logged</div></div>
+        <div class="chev">›</div></div>`;
+    });
+  }
+  h+=`<div style="height:8px"></div><button class="btn" onclick="editPlan()">+ New routine</button>
+    <div class="divider"></div><div class="section-label">Units</div>
+    <div class="seg">
+      <button class="${unit()==='kg'?'on':''}" onclick="setUnit('kg')">kg</button>
+      <button class="${unit()==='lb'?'on':''}" onclick="setUnit('lb')">lb</button>
+    </div>
+    <p class="muted" style="font-size:12px;line-height:1.5;margin:-6px 0 4px">Just a label — switching won't convert numbers you've already entered.</p>
+    <div class="section-label">Backup</div>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost sm grow" onclick="exportData()">Export data</button>
+      <button class="btn ghost sm grow" onclick="document.getElementById('importFile').click()">Import data</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+    <p class="muted" style="font-size:12px;line-height:1.6;margin-top:10px">
+      Data lives only on this phone. Export a backup now and then — clearing your browser data would wipe it.</p>`;
+  return h;
+}
+
+function groupRows(rows){
+  const order=[],map={};
+  rows.forEach(r=>{const m=(r.muscle||'Other').trim()||'Other';
+    if(!map[m]){map[m]=[];order.push(m);}map[m].push(r);});
+  return order.map(m=>({muscle:m,rows:map[m]}));
+}
+
+function renderRoutine(rid){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return'';
+  let h=`<div class="row between" style="align-items:flex-start;margin-bottom:4px">
+      <div><div class="rtitle">${esc(r.name)}</div>
+      <div class="rmeta">${r.rows.length} exercises · ${r.days.length} workout days</div></div>
+      <button class="editbtn ${screen.editing?'on':''}" onclick="toggleEdit()">${screen.editing?'Done':'Edit'}</button>
+    </div>`;
+
+  if(!r.rows.length){
+    h+=`<div class="empty"><div class="big">📋</div>No exercises yet.<br>Tap "Edit plan" to add some.</div>
+      <button class="btn" onclick="editPlan('${r.id}')">Edit plan</button>`;
+    return h;
+  }
+
+  const colspan=1+r.days.length;
+  h+=`<div class="table-wrap ${screen.editing?'editing':''}"><table><thead><tr>
+      <th class="sticky-col corner">Exercise</th>`;
+  r.days.forEach(d=>{const f=fmtDay(d.ts);const t=isToday(d.ts)?'today':'';
+    h+=`<th class="dayhead ${t}" ${screen.editing?`onclick="editDay('${r.id}','${d.id}')"`:''}>
+      <span class="wd">${f.wd}</span><span class="dd">${f.dd}</span>${screen.editing?'<span class="edhint">edit ✎</span>':''}</th>`;});
+  if(!r.days.length) h+=`<th class="dayhead muted" style="font-weight:600">No days yet</th>`;
+  h+=`</tr></thead><tbody>`;
+
+  groupRows(r.rows).forEach(g=>{
+    h+=`<tr class="grouprow"><td class="grouphead">${esc(g.muscle)}</td>
+        <td class="groupfill" colspan="${Math.max(1,r.days.length)}"></td></tr>`;
+    g.rows.forEach(row=>{
+      h+=`<tr class="exrow"><td class="sticky-col excell">
+          <div class="exname">${esc(row.exercise)}</div>
+          <div class="exmeta">${esc(row.sets||'?')} sets · ${esc(row.target||'—')} reps</div></td>`;
+      const prs=prMap(r,row.id);
+      if(!r.days.length){h+=`<td class="daycell muted" style="text-align:center;font-size:12px">—</td>`;}
+      r.days.forEach(d=>{
+        const cell=(r.log[row.id]&&r.log[row.id][d.id])||{w:'',r:''};const t=isToday(d.ts)?'today':'';
+        const lbl=scoreLabel(cell);const isPR=prs[d.id]&&lbl;
+        h+=`<td class="daycell ${t}"><div class="stack">
+          <input class="w" inputmode="decimal" placeholder="${unit()}" value="${esc(cell.w)}"
+            oninput="setCell('${r.id}','${row.id}','${d.id}','w',this.value)">
+          <input class="r" inputmode="text" placeholder="reps" value="${esc(cell.r)}"
+            oninput="setCell('${r.id}','${row.id}','${d.id}','r',this.value)">
+          <div class="score ${isPR?'pr':''}" id="sc_${row.id}_${d.id}">${isPR?'⭐ ':''}${lbl}</div>
+        </div></td>`;
+      });
+      h+=`</tr>`;
+    });
+  });
+  h+=`</tbody></table></div>
+    <div style="height:14px"></div>
+    <button class="btn" onclick="addDay('${r.id}')">+ Log a workout day (today)</button>
+    <div style="height:8px"></div>
+    <button class="btn ghost" onclick="go('progress','${r.id}')">📈 Progress &amp; 1RM graph</button>
+    <div style="height:8px"></div>
+    <button class="btn ghost" onclick="editPlan('${r.id}')">Edit plan</button>`;
+  return h;
+}
+
+function toggleEdit(){screen.editing=!screen.editing;render();}
+
+/* ---------------- progress + graph ---------------- */
+function selEx(id){screen.exId=id;document.getElementById('view').innerHTML=renderProgress(screen.rid);}
+function renderProgress(rid){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return'';
+  if(!r.rows.length)return `<div class="empty"><div class="big">📈</div>Add exercises first to track progress.</div>`;
+  if(!screen.exId||!r.rows.find(x=>x.id===screen.exId))screen.exId=r.rows[0].id;
+  const metric=screen.metric||'1rm';
+  let h=`<div class="rtitle">Progress</div><div class="rmeta">${esc(r.name)} · ${metric==='vol'?'training volume':'estimated 1-rep-max'}</div>
+    <div class="seg">
+      <button class="${metric==='1rm'?'on':''}" onclick="setMetric('1rm')">Est. 1RM</button>
+      <button class="${metric==='vol'?'on':''}" onclick="setMetric('vol')">Volume</button>
+    </div>
+    <div class="pills">`;
+  r.rows.forEach(row=>{h+=`<button class="pill ${row.id===screen.exId?'on':''}" onclick="selEx('${row.id}')">${esc(row.exercise)}</button>`;});
+  h+=`</div>`;
+  const fn=metric==='vol'?cellVolume:cellScore;
+  const pts=[];
+  r.days.forEach(d=>{const c=r.log[screen.exId]&&r.log[screen.exId][d.id];const s=fn(c);if(s)pts.push({ts:d.ts,score:s});});
+  if(!pts.length){h+=`<div class="empty"><div class="big">🗓️</div>No sets logged for this exercise yet.<br>Fill in some weights & reps to see the curve.</div>`;return h;}
+  const u=unit();
+  const cur=pts[pts.length-1].score,pr=Math.max(...pts.map(p=>p.score)),first=pts[0].score,delta=cur-first;
+  h+=`<div class="stats">
+    <div class="stat"><div class="sl">Current</div><div class="sv">${fmtNum(cur)}<span>${u}</span></div></div>
+    <div class="stat"><div class="sl">Best</div><div class="sv">${fmtNum(pr)}<span>${u}</span></div></div>
+    <div class="stat"><div class="sl">Since start</div><div class="sv ${delta>=0?'up':'down'}">${delta>=0?'+':''}${fmtNum(delta)}<span>${u}</span></div></div>
+  </div>
+  <div class="chart">${lineChart(pts,u)}</div>
+  <p class="muted" style="font-size:12px;line-height:1.6;margin-top:4px">
+    ${metric==='vol'?'Volume = total weight moved each session (Σ weight × reps across your sets).':'Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)); your best set is scored.'}</p>`;
+  return h;
+}
+function setMetric(m){screen.metric=m;document.getElementById('view').innerHTML=renderProgress(screen.rid);}
+function lineChart(pts,u){
+  const W=320,H=190,pad=30;
+  const xs=pts.map((_,i)=>pts.length>1?pad+i*(W-2*pad)/(pts.length-1):W/2);
+  const vals=pts.map(p=>p.score);
+  let mn=Math.min(...vals),mx=Math.max(...vals);
+  if(mn===mx){mn-=5;mx+=5;}else{const p=(mx-mn)*0.15;mn-=p;mx+=p;}
+  const y=v=>H-pad-(v-mn)/(mx-mn)*(H-2*pad);
+  const ys=vals.map(y);
+  const poly=xs.map((x,i)=>`${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const dots=xs.map((x,i)=>`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="3.6" fill="#d6f93b"/>`).join('');
+  const area=`${xs[0].toFixed(1)},${(H-pad)} ${poly} ${xs[xs.length-1].toFixed(1)},${(H-pad)}`;
+  const f=ts=>new Date(ts).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+  const grid=[0,.5,1].map(t=>{const yy=(H-pad)-t*(H-2*pad);return `<line x1="${pad}" y1="${yy.toFixed(1)}" x2="${W-pad}" y2="${yy.toFixed(1)}" stroke="#2a2a2e" stroke-width="1"/>`;}).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+    ${grid}
+    ${pts.length>1?`<polygon points="${area}" fill="rgba(214,249,59,.08)" stroke="none"/>`:''}
+    ${pts.length>1?`<polyline points="${poly}" fill="none" stroke="#d6f93b" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+    ${dots}
+    <text x="${pad}" y="16" fill="#8a8a92" font-size="11" font-weight="700">${fmtNum(mx)}${u||'kg'}</text>
+    <text x="${pad}" y="${H-pad+18}" fill="#8a8a92" font-size="10">${f(pts[0].ts)}</text>
+    <text x="${W-pad}" y="${H-pad+18}" fill="#8a8a92" font-size="10" text-anchor="end">${f(pts[pts.length-1].ts)}</text>
+  </svg>`;
+}
+
+/* ---------------- cell + day logging ---------------- */
+function setCell(rid,rowId,dayId,field,val){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return;
+  if(!r.log[rowId])r.log[rowId]={};
+  if(!r.log[rowId][dayId])r.log[rowId][dayId]={w:'',r:''};
+  r.log[rowId][dayId][field]=val;save();
+  refreshRowScores(rid,rowId);
+}
+function addDay(rid){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return;
+  const prev=r.days.length?r.days[r.days.length-1]:null;
+  const nd={id:uid(),ts:Date.now()};
+  r.days.push(nd);
+  let copied=false;
+  if(prev){
+    r.rows.forEach(row=>{
+      const pc=r.log[row.id]&&r.log[row.id][prev.id];
+      if(pc&&(pc.w||pc.r)){if(!r.log[row.id])r.log[row.id]={};r.log[row.id][nd.id]={w:pc.w,r:pc.r};copied=true;}
+    });
+  }
+  save();render();toast(copied?'Day added — copied last session':'New day added →');
+}
+function delDay(rid,dayId){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return;
+  confirmDo('Delete this day and the sets logged in it?',()=>{
+    r.days=r.days.filter(d=>d.id!==dayId);
+    Object.keys(r.log).forEach(k=>{if(r.log[k])delete r.log[k][dayId];});
+    save();render();
+  });
+}
+function toDateInput(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+function editDay(rid,dayId){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return;
+  const d=r.days.find(x=>x.id===dayId);if(!d)return;
+  openSheet(`<h2>Edit day</h2>
+    <div class="field"><label>Date</label>
+      <input type="date" id="dayDate" value="${toDateInput(d.ts)}"></div>
+    <button class="btn" onclick="saveDayDate('${rid}','${dayId}')">Save date</button>
+    <div style="height:8px"></div>
+    <button class="btn danger" onclick="delDay('${rid}','${dayId}')">Delete this day</button>`);
+}
+function saveDayDate(rid,dayId){
+  const r=data.routines.find(x=>x.id===rid);if(!r)return;
+  const d=r.days.find(x=>x.id===dayId);if(!d)return;
+  const v=document.getElementById('dayDate').value;
+  if(v){const a=v.split('-').map(Number);d.ts=new Date(a[0],a[1]-1,a[2],12,0,0).getTime();}
+  r.days.sort((x,y)=>x.ts-y.ts);
+  save();closeSheet();render();toast('Date updated');
+}
+
+/* ---------------- plan editor ---------------- */
+let draft=null;
+function editPlan(rid){
+  draft = rid ? JSON.parse(JSON.stringify(data.routines.find(r=>r.id===rid)))
+              : {id:uid(),name:'',rows:[{id:uid(),muscle:'',exercise:'',sets:'3',target:'8-12'}],days:[],log:{}};
+  draft._isNew=!rid;
+  renderEditor();
+}
+function renderEditor(){
+  let h=`<h2>${draft._isNew?'New routine':'Edit plan'}</h2>
+    <div class="field"><label>Routine name</label>
+      <input id="rName" placeholder="e.g. Push Day" value="${esc(draft.name)}" oninput="draft.name=this.value" autocomplete="off"></div>
+    <div class="planhead"><div>Muscle</div><div>Exercise</div><div>Sets</div><div>Target</div><div></div></div>
+    <div id="planRows">`;
+  draft.rows.forEach((row,i)=>{
+    h+=`<div class="planrow">
+      <input list="muscles" placeholder="Chest" value="${esc(row.muscle)}" oninput="draft.rows[${i}].muscle=this.value" autocomplete="off">
+      <input placeholder="Bench Press" value="${esc(row.exercise)}" oninput="draft.rows[${i}].exercise=this.value" autocomplete="off">
+      <input class="c" inputmode="numeric" placeholder="4" value="${esc(row.sets)}" oninput="draft.rows[${i}].sets=this.value">
+      <input class="c" placeholder="8-10" value="${esc(row.target)}" oninput="draft.rows[${i}].target=this.value">
+      <button class="x" onclick="rmRow(${i})">×</button></div>`;
+  });
+  h+=`</div><div class="addrow" onclick="addRow()">+ Add exercise</div>
+    <div style="height:18px"></div>
+    <button class="btn" onclick="savePlan()">Save</button>`;
+  if(!draft._isNew)h+=`<div style="height:8px"></div><button class="btn danger" onclick="delRoutine('${draft.id}')">Delete routine</button>`;
+  openSheet(h);
+}
+function addRow(){draft.rows.push({id:uid(),muscle:'',exercise:'',sets:'3',target:'8-12'});renderEditor();}
+function rmRow(i){draft.rows.splice(i,1);renderEditor();}
+function savePlan(){
+  draft.name=(draft.name||'').trim()||'Untitled';
+  draft.rows=draft.rows.filter(r=>r.exercise.trim());
+  if(!draft.log)draft.log={};
+  const clean={id:draft.id,name:draft.name,rows:draft.rows,days:draft.days||[],log:draft.log};
+  const idx=data.routines.findIndex(r=>r.id===draft.id);
+  if(idx>=0)data.routines[idx]=clean;else data.routines.push(clean);
+  save();closeSheet();
+  if(screen.name==='home')go('routine',clean.id);else render();
+  toast('Saved');
+}
+function delRoutine(id){
+  confirmDo('Delete this routine and all its logged data?',()=>{
+    data.routines=data.routines.filter(r=>r.id!==id);save();go('home');
+  });
+}
+
+/* ---------------- backup ---------------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`lift-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();toast('Backup downloaded');
+}
+function importData(ev){
+  const f=ev.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.routines){data=d;save();go('home');toast('Data imported');}
+    else toast('Not a valid backup');}catch(e){toast('Could not read file');}};
+  rd.readAsText(f);
+}
+
+/* ---------------- sheet ---------------- */
+function openSheet(html){document.getElementById('sheet').innerHTML=html;document.getElementById('sheetBg').style.display='flex';}
+function closeSheet(){document.getElementById('sheetBg').style.display='none';}
+document.getElementById('sheetBg').addEventListener('click',e=>{if(e.target.id==='sheetBg')closeSheet();});
+
+/* custom confirm — native confirm() is blocked in sandboxed previews */
+let _pendingYes=null;
+function confirmDo(msg,onYes){
+  _pendingYes=onYes;
+  openSheet(`<h2>Are you sure?</h2>
+    <p class="muted" style="font-size:15px;line-height:1.6;margin:-6px 0 20px">${esc(msg)}</p>
+    <button class="btn" style="background:var(--danger);color:#fff" onclick="confirmYes()">Delete</button>
+    <div style="height:8px"></div>
+    <button class="btn ghost" onclick="closeSheet()">Cancel</button>`);
+}
+function confirmYes(){const fn=_pendingYes;_pendingYes=null;closeSheet();if(fn)fn();}
+
+load();render();
+</script>
+</body>
+</html>
