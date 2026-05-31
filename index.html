@@ -114,7 +114,8 @@
   .seg button{flex:1;padding:9px 0;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted);}
   .seg button.on{background:var(--accent);color:#0a0a0b;}
 
-  .pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;-webkit-overflow-scrolling:touch;}
+  .pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;}
+  .sublabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:2px 2px 7px;}
   .pill{flex:0 0 auto;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
     font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px;white-space:nowrap;}
   .pill.on{background:var(--accent);color:#0a0a0b;border-color:var(--accent);}
@@ -136,12 +137,15 @@
   .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
   .field input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-size:16px;font-weight:600;padding:13px 14px;border-radius:12px;}
   .field input:focus{outline:none;border-color:var(--accent-dim);}
-  .planrow{display:grid;grid-template-columns:1fr 1.3fr 46px 64px 26px;gap:6px;align-items:center;margin-bottom:7px;}
+  .planrow{display:grid;grid-template-columns:1fr 1.2fr 44px 84px 24px;gap:6px;align-items:center;margin-bottom:7px;}
   .planrow input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
     font-size:14px;font-weight:600;padding:10px 7px;border-radius:9px;}
   .planrow input.c{text-align:center;}
+  .rng{display:flex;align-items:center;gap:3px;}
+  .rng input{min-width:0;text-align:center;padding:10px 2px;}
+  .rng .dash{flex:0 0 auto;color:var(--muted);font-weight:700;font-size:13px;}
   .planrow .x{color:var(--danger);font-size:20px;font-weight:700;text-align:center;}
-  .planhead{display:grid;grid-template-columns:1fr 1.3fr 46px 64px 26px;gap:6px;
+  .planhead{display:grid;grid-template-columns:1fr 1.2fr 44px 84px 24px;gap:6px;
     font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;padding:0 4px;}
   .addrow{font-size:13px;font-weight:700;color:var(--accent);padding:8px 2px 2px;}
 
@@ -327,7 +331,7 @@ function renderRoutine(rid){
         h+=`<td class="daycell ${t}"><div class="stack">
           <input class="w" inputmode="decimal" placeholder="${unit()}" value="${esc(cell.w)}"
             oninput="setCell('${r.id}','${row.id}','${d.id}','w',this.value)">
-          <input class="r" inputmode="text" placeholder="reps" value="${esc(cell.r)}"
+          <input class="r" inputmode="numeric" placeholder="reps" value="${esc(cell.r)}"
             oninput="setCell('${r.id}','${row.id}','${d.id}','r',this.value)">
           <div class="score ${isPR?'pr':''}" id="sc_${row.id}_${d.id}">${isPR?'⭐ ':''}${lbl}</div>
         </div></td>`;
@@ -348,19 +352,36 @@ function renderRoutine(rid){
 function toggleEdit(){screen.editing=!screen.editing;render();}
 
 /* ---------------- progress + graph ---------------- */
+function selMuscle(gi){
+  const r=data.routines.find(x=>x.id===screen.rid);if(!r)return;
+  const g=groupRows(r.rows)[gi];if(!g)return;
+  screen.muscle=g.muscle; screen.exId=g.rows[0]?g.rows[0].id:null;
+  document.getElementById('view').innerHTML=renderProgress(screen.rid);
+}
 function selEx(id){screen.exId=id;document.getElementById('view').innerHTML=renderProgress(screen.rid);}
 function renderProgress(rid){
   const r=data.routines.find(x=>x.id===rid);if(!r)return'';
   if(!r.rows.length)return `<div class="empty"><div class="big">📈</div>Add exercises first to track progress.</div>`;
-  if(!screen.exId||!r.rows.find(x=>x.id===screen.exId))screen.exId=r.rows[0].id;
+  const groups=groupRows(r.rows);
+  if(!screen.muscle||!groups.find(g=>g.muscle===screen.muscle)){
+    const g0=screen.exId?groups.find(g=>g.rows.some(x=>x.id===screen.exId)):null;
+    screen.muscle=(g0||groups[0]).muscle;
+  }
+  const grp=groups.find(g=>g.muscle===screen.muscle)||groups[0];
+  if(!screen.exId||!grp.rows.find(x=>x.id===screen.exId))screen.exId=grp.rows[0].id;
   const metric=screen.metric||'1rm';
   let h=`<div class="rtitle">Progress</div><div class="rmeta">${esc(r.name)} · ${metric==='vol'?'training volume':'estimated 1-rep-max'}</div>
     <div class="seg">
       <button class="${metric==='1rm'?'on':''}" onclick="setMetric('1rm')">Est. 1RM</button>
       <button class="${metric==='vol'?'on':''}" onclick="setMetric('vol')">Volume</button>
     </div>
+    <div class="sublabel">Muscle group</div>
     <div class="pills">`;
-  r.rows.forEach(row=>{h+=`<button class="pill ${row.id===screen.exId?'on':''}" onclick="selEx('${row.id}')">${esc(row.exercise)}</button>`;});
+  groups.forEach((g,gi)=>{h+=`<button class="pill ${g.muscle===screen.muscle?'on':''}" onclick="selMuscle(${gi})">${esc(g.muscle)}</button>`;});
+  h+=`</div>
+    <div class="sublabel">Exercise</div>
+    <div class="pills">`;
+  grp.rows.forEach(row=>{h+=`<button class="pill ${row.id===screen.exId?'on':''}" onclick="selEx('${row.id}')">${esc(row.exercise)}</button>`;});
   h+=`</div>`;
   const fn=metric==='vol'?cellVolume:cellScore;
   const pts=[];
@@ -469,11 +490,17 @@ function renderEditor(){
     <div class="planhead"><div>Muscle</div><div>Exercise</div><div>Sets</div><div>Target</div><div></div></div>
     <div id="planRows">`;
   draft.rows.forEach((row,i)=>{
+    const tp=String(row.target||'').split('-');
+    const tlo=esc((tp[0]||'').trim()),thi=esc((tp[1]||'').trim());
     h+=`<div class="planrow">
       <input list="muscles" placeholder="Chest" value="${esc(row.muscle)}" oninput="draft.rows[${i}].muscle=this.value" autocomplete="off">
       <input placeholder="Bench Press" value="${esc(row.exercise)}" oninput="draft.rows[${i}].exercise=this.value" autocomplete="off">
       <input class="c" inputmode="numeric" placeholder="4" value="${esc(row.sets)}" oninput="draft.rows[${i}].sets=this.value">
-      <input class="c" placeholder="8-10" value="${esc(row.target)}" oninput="draft.rows[${i}].target=this.value">
+      <div class="rng">
+        <input class="c" inputmode="numeric" placeholder="8" id="t_lo_${i}" value="${tlo}" oninput="setTarget(${i})">
+        <span class="dash">–</span>
+        <input class="c" inputmode="numeric" placeholder="12" id="t_hi_${i}" value="${thi}" oninput="setTarget(${i})">
+      </div>
       <button class="x" onclick="rmRow(${i})">×</button></div>`;
   });
   h+=`</div><div class="addrow" onclick="addRow()">+ Add exercise</div>
@@ -484,6 +511,11 @@ function renderEditor(){
 }
 function addRow(){draft.rows.push({id:uid(),muscle:'',exercise:'',sets:'3',target:'8-12'});renderEditor();}
 function rmRow(i){draft.rows.splice(i,1);renderEditor();}
+function setTarget(i){
+  const g=id=>((document.getElementById(id)||{}).value||'').replace(/[^0-9]/g,'');
+  const lo=g('t_lo_'+i),hi=g('t_hi_'+i);
+  draft.rows[i].target=[lo,hi].filter(x=>x!=='').join('-');
+}
 function savePlan(){
   draft.name=(draft.name||'').trim()||'Untitled';
   draft.rows=draft.rows.filter(r=>r.exercise.trim());
