@@ -183,7 +183,23 @@ const KEY='lift_data_v2';
 let data={routines:[]};
 let screen={name:'home',rid:null,editing:false};
 
-function load(){try{const r=localStorage.getItem(KEY);if(r)data=JSON.parse(r);}catch(e){}}
+function normalize(d){
+  if(!d||typeof d!=='object'||!Array.isArray(d.routines))return {routines:[]};
+  const out={routines:[]};
+  if(d.unit==='kg'||d.unit==='lb')out.unit=d.unit;
+  d.routines.forEach(r=>{
+    if(!r||typeof r!=='object')return;
+    const rows=Array.isArray(r.rows)?r.rows.filter(x=>x&&typeof x==='object').map(x=>({
+      id:x.id||uid(),muscle:x.muscle||'',exercise:x.exercise||'',
+      sets:x.sets==null?'':String(x.sets),target:x.target==null?'':String(x.target)})):[];
+    const days=Array.isArray(r.days)?r.days.filter(x=>x&&x.id).map(x=>({
+      id:x.id,ts:Number(x.ts)||Date.now()})):[];
+    const log=(r.log&&typeof r.log==='object')?r.log:{};
+    out.routines.push({id:r.id||uid(),name:r.name||'Untitled',rows,days,log});
+  });
+  return out;
+}
+function load(){try{const r=localStorage.getItem(KEY);if(r)data=normalize(JSON.parse(r));}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){toast('Could not save — storage blocked');}}
 const uid=()=>Math.random().toString(36).slice(2,9);
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
@@ -235,20 +251,37 @@ function refreshRowScores(rid,rowId){
 
 function go(name,rid){screen={name,rid:rid||null,editing:false};render();}
 
+/* Replace #view content safely. On iOS, swapping innerHTML while a momentum
+   (flick) scroll is still gliding leaves WebKit in a broken state — so we
+   first force any in-flight scroll to stop, then swap. */
+function setView(html){
+  const v=document.getElementById('view');
+  if(!v){return;}
+  v.querySelectorAll('.table-wrap,.pills').forEach(el=>{
+    el.style.webkitOverflowScrolling='auto';
+    el.style.overflow='hidden';
+  });
+  v.style.overflowY='hidden';
+  v.scrollTop=0; v.scrollLeft=0;
+  void v.offsetHeight;            // reflow commits the stop
+  v.innerHTML=html;
+  v.style.overflowY='';           // restore (stylesheet: auto)
+}
+
 /* ---------------- render ---------------- */
 function render(){
   const tb=document.getElementById('topbar');
   if(screen.name==='home'){
     tb.innerHTML=`<div class="logo">LIFT<span>.</span></div><div class="grow"></div>`;
-    document.getElementById('view').innerHTML=renderHome();
+    setView(renderHome());
     return;
   }
   const back=screen.name==='progress'?`go('routine','${screen.rid}')`:`go('home')`;
   tb.innerHTML=`<button class="back" onclick="${back}">‹</button><div class="logo">LIFT<span>.</span></div>`;
   if(screen.name==='progress'){
-    document.getElementById('view').innerHTML=renderProgress(screen.rid);
+    setView(renderProgress(screen.rid));
   }else{
-    document.getElementById('view').innerHTML=renderRoutine(screen.rid);
+    setView(renderRoutine(screen.rid));
     // jump to the latest (right-most) column so today is in view
     const w=document.querySelector('.table-wrap');if(w)w.scrollLeft=w.scrollWidth;
   }
@@ -356,9 +389,9 @@ function selMuscle(gi){
   const r=data.routines.find(x=>x.id===screen.rid);if(!r)return;
   const g=groupRows(r.rows)[gi];if(!g)return;
   screen.muscle=g.muscle; screen.exId=g.rows[0]?g.rows[0].id:null;
-  document.getElementById('view').innerHTML=renderProgress(screen.rid);
+  setView(renderProgress(screen.rid));
 }
-function selEx(id){screen.exId=id;document.getElementById('view').innerHTML=renderProgress(screen.rid);}
+function selEx(id){screen.exId=id;setView(renderProgress(screen.rid));}
 function renderProgress(rid){
   const r=data.routines.find(x=>x.id===rid);if(!r)return'';
   if(!r.rows.length)return `<div class="empty"><div class="big">📈</div>Add exercises first to track progress.</div>`;
@@ -399,7 +432,7 @@ function renderProgress(rid){
     ${metric==='vol'?'Volume = total weight moved each session (Σ weight × reps across your sets).':'Estimated 1RM uses the Epley formula (weight × (1 + reps ÷ 30)); your best set is scored.'}</p>`;
   return h;
 }
-function setMetric(m){screen.metric=m;document.getElementById('view').innerHTML=renderProgress(screen.rid);}
+function setMetric(m){screen.metric=m;setView(renderProgress(screen.rid));}
 function lineChart(pts,u){
   const W=320,H=190,pad=30;
   const xs=pts.map((_,i)=>pts.length>1?pad+i*(W-2*pad)/(pts.length-1):W/2);
@@ -541,7 +574,7 @@ function exportData(){
 }
 function importData(ev){
   const f=ev.target.files[0];if(!f)return;const rd=new FileReader();
-  rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.routines){data=d;save();go('home');toast('Data imported');}
+  rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d&&Array.isArray(d.routines)){data=normalize(d);save();go('home');toast('Data imported');}
     else toast('Not a valid backup');}catch(e){toast('Could not read file');}};
   rd.readAsText(f);
 }
