@@ -129,11 +129,13 @@
   .seg button{flex:1;padding:9px 0;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted);}
   .seg button.on{background:var(--accent);color:#0a0a0b;}
 
-  .pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;}
-  .sublabel{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:2px 2px 7px;}
-  .pill{flex:0 0 auto;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
-    font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px;white-space:nowrap;}
-  .pill.on{background:var(--accent);color:#0a0a0b;border-color:var(--accent);}
+  .exselect{position:relative;margin:2px 0 16px;}
+  .exselect select{width:100%;-webkit-appearance:none;appearance:none;background:var(--surface-2);
+    border:1px solid var(--line);color:var(--text);font-family:inherit;font-weight:700;font-size:16px;
+    padding:14px 40px 14px 14px;border-radius:12px;}
+  .exselect select:focus{outline:none;border-color:var(--accent-dim);}
+  .exselect::after{content:'▾';position:absolute;right:15px;top:50%;transform:translateY(-50%);
+    color:var(--accent);font-size:14px;pointer-events:none;}
   .stats{display:flex;gap:10px;margin-bottom:14px;}
   .stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;}
   .stat .sl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
@@ -520,39 +522,33 @@ function gatherPoints(name,metricFn,isVol){
   });
   return Object.keys(byDay).map(k=>({ts:Number(k),score:byDay[k]})).sort((a,b)=>a.ts-b.ts);
 }
-function selMuscle(gi){
-  const g=allGroups()[gi];if(!g)return;
-  screen.muscle=g.muscle;screen.exKey=g.rows[0]?g.rows[0].key:null;
+function selExKey(key){
+  const g=allGroups().find(x=>x.rows.some(r=>r.key===key));
+  if(g)screen.muscle=g.muscle;
+  screen.exKey=key;
   setView(renderProgress(screen.rid));
-}
-function selEx(ei){
-  const g=allGroups().find(x=>x.muscle===screen.muscle);if(!g||!g.rows[ei])return;
-  screen.exKey=g.rows[ei].key;setView(renderProgress(screen.rid));
 }
 function renderProgress(rid){
   const groups=allGroups();
   if(!groups.length)return `<div class="empty"><div class="big">📈</div>Add exercises first to track progress.</div>`;
-  if(!screen.muscle||!groups.find(g=>g.muscle===screen.muscle)){
-    const g0=screen.exKey?groups.find(g=>g.rows.some(x=>x.key===screen.exKey)):null;
-    screen.muscle=(g0||groups[0]).muscle;
-  }
-  const grp=groups.find(g=>g.muscle===screen.muscle)||groups[0];
-  if(!screen.exKey||!grp.rows.find(x=>x.key===screen.exKey))screen.exKey=grp.rows[0].key;
-  const cur=grp.rows.find(x=>x.key===screen.exKey)||grp.rows[0];
+  // resolve the selected exercise (by name-key) across every group
+  let cur=null,curMuscle=null;
+  groups.forEach(g=>g.rows.forEach(x=>{if(x.key===screen.exKey){cur=x;curMuscle=g.muscle;}}));
+  if(!cur){cur=groups[0].rows[0];curMuscle=groups[0].muscle;}
+  screen.exKey=cur.key;screen.muscle=curMuscle;
   const metric=screen.metric||'1rm';
   let h=`<div class="rtitle">Progress</div><div class="rmeta">${esc(cur.name)} · ${metric==='vol'?'training volume':'estimated 1-rep-max'} · all workouts combined</div>
     <div class="seg">
       <button class="${metric==='1rm'?'on':''}" onclick="setMetric('1rm')">Est. 1RM</button>
       <button class="${metric==='vol'?'on':''}" onclick="setMetric('vol')">Volume</button>
     </div>
-    <div class="sublabel">Muscle group</div>
-    <div class="pills">`;
-  groups.forEach((g,gi)=>{h+=`<button class="pill ${g.muscle===screen.muscle?'on':''}" onclick="selMuscle(${gi})">${esc(g.muscle)}</button>`;});
-  h+=`</div>
-    <div class="sublabel">Exercise</div>
-    <div class="pills">`;
-  grp.rows.forEach((x,ei)=>{h+=`<button class="pill ${x.key===screen.exKey?'on':''}" onclick="selEx(${ei})">${esc(x.name)}</button>`;});
-  h+=`</div>`;
+    <div class="exselect"><select onchange="selExKey(this.value)" aria-label="Choose exercise">`;
+  groups.forEach(g=>{
+    h+=`<optgroup label="${esc(g.muscle)}">`;
+    g.rows.forEach(x=>{h+=`<option value="${esc(x.key)}" ${x.key===screen.exKey?'selected':''}>${esc(x.name)}</option>`;});
+    h+=`</optgroup>`;
+  });
+  h+=`</select></div>`;
   const fn=metric==='vol'?cellVolume:cellScore;
   const pts=gatherPoints(cur.name,fn,metric==='vol');
   if(!pts.length){h+=`<div class="empty"><div class="big">🗓️</div>No sets logged for this exercise yet.<br>Fill in some weights & reps to see the curve.</div>`;return h;}
